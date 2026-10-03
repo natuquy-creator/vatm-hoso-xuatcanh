@@ -1,0 +1,51 @@
+name: Build VATM apps
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  android-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: android-actions/setup-android@v3
+      - run: npm install
+      - run: npx cap add android
+      # Biểu tượng ứng dụng Android từ icon-source-1024.png
+      - run: |
+          for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            n=${d%%:*}; s=${d##*:}
+            for f in ic_launcher ic_launcher_round ic_launcher_foreground; do
+              convert icon-source-1024.png -resize ${s}x${s} android/app/src/main/res/mipmap-$n/$f.png
+            done
+          done
+      - run: npx cap sync android
+      - run: cd android && ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VATM-HoSo-android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  ios-simulator:
+    # iOS cài lên iPhone thật cần tài khoản Apple Developer + ký số (xem README).
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - run: npx cap add ios
+      - run: npx cap sync ios
+      - run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug \
+            -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VATM-HoSo-ios-simulator-app
+          path: ios/App/build/Build/Products/Debug-iphonesimulator/App.app

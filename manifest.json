@@ -1,0 +1,17 @@
+{
+  "name": "VATM — Hồ sơ xuất cảnh Đảng viên",
+  "short_name": "VATM Hồ sơ",
+  "description": "Theo dõi tờ trình, giấy phép và báo cáo xuất cảnh của đảng viên — Đảng bộ Tổng công ty Quản lý bay Việt Nam",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf6f5",
+  "theme_color": "#b91c1c",
+  "lang": "vi",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
