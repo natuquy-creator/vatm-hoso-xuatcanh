@@ -1,0 +1,60 @@
+name: Build VATM Android APK
+on:
+  workflow_dispatch:
+
+jobs:
+  android-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Ghép thư mục www từ các file ở gốc
+        run: |
+          mkdir -p www/icons
+          cp index.html manifest.json sw.js www/
+          cp icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png icon-192.svg www/icons/
+
+      - name: Cài thư viện
+        run: npm install
+
+      - name: Tạo dự án Android
+        run: npx cap add android
+
+      - name: Tạo biểu tượng ứng dụng từ icon-source-1024.png
+        run: |
+          RES=android/app/src/main/res
+          # Màu nền tự lấy từ góc ảnh logo (dùng ảnh nền đặc, không trong suốt)
+          BG=$(convert icon-source-1024.png -format '%[hex:p{4,4}]' info: | cut -c1-6)
+          [ -z "$BG" ] && BG=FFFFFF
+          mkdir -p $RES/values
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#%s</color>\n</resources>\n' "$BG" > $RES/values/ic_launcher_background.xml
+          for d in mdpi:48:108 hdpi:72:162 xhdpi:96:216 xxhdpi:144:324 xxxhdpi:192:432; do
+            IFS=: read n l f <<< "$d"
+            inner=$(( f * 62 / 100 ))
+            convert icon-source-1024.png -resize ${l}x${l} $RES/mipmap-$n/ic_launcher.png
+            convert icon-source-1024.png -resize ${l}x${l} $RES/mipmap-$n/ic_launcher_round.png
+            convert icon-source-1024.png -resize ${inner}x${inner} -background none -gravity center -extent ${f}x${f} $RES/mipmap-$n/ic_launcher_foreground.png
+          done
+
+      - name: Đồng bộ
+        run: npx cap sync android
+
+      - name: Dựng APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VATM-HoSo-android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
